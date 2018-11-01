@@ -1,0 +1,16 @@
+<ion-header>
+  <ion-navbar>
+    <button ion-button menuToggle>
+      <ion-icon name="menu"></ion-icon>
+    </button>
+    <ion-title>Sign-in</ion-title>
+  </ion-navbar>
+</ion-header>
+
+<ion-content padding>
+  <h3>Choose a username</h3>
+
+  <ion-input type="text" [(ngModel)]="name" placeholder="Display Name"></ion-input>
+
+  <button ion-button secondary (click)="setName()">Set Name</button>
+</ion-content>
