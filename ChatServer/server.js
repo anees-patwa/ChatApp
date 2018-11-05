@@ -7,15 +7,32 @@ var http = require("http"),
 var app = http.createServer(function (req, resp) {
     // This callback runs when a new connection is made to our HTTP server.
     console.log("connected to server");
+    fs.readFile("client.html", function (err, data) {
+        // This callback runs when the client.html file has been read from the filesystem.
+
+        if (err) return resp.writeHead(500);
+        resp.writeHead(200);
+        resp.end(data);
+    });
 });
-app.listen(8100);
+app.listen(3456);
 
 // Do the Socket.IO magic:
 var io = socketio.listen(app);
 io.sockets.on("connection", function (socket) {
     // This callback runs when a new Socket.IO connection is established.
 
-    console.log("socket io connection is on");
+    // This callback runs when a new Socket.IO connection is established.
+
+    socket.on('message_to_server', function (data) {
+        // This callback runs when the server receives a new message from the client.
+
+        console.log("message: " + data["message"]); // log it to the Node.JS output
+        io.sockets.emit("message_to_client", {
+            message: data["message"]
+        }) // broadcast the message to other users
+    });
+    /*console.log("socket io connection is on");
 
     socket.on('disconnect', function () {
         io.emit('users-changed', {
@@ -45,5 +62,5 @@ io.sockets.on("connection", function (socket) {
             from: socket.nickname,
             created: new Date()
         });
-    });
+    });*/
 });
