@@ -8,11 +8,17 @@
 
   <ion-navbar>
     <ion-title>RoomsListPage</ion-title>
+    <button ion-item (click)="addRoom()">Create</button>
   </ion-navbar>
 
 </ion-header>
 
+<ion-content>
+  <ion-list>
+    <button ion-item *ngFor="let room of rooms" (click)="joinRoom($event, room)">
 
-<ion-content padding>
+      {{room.roomName}}
 
+    </button>
+  </ion-list>
 </ion-content>
