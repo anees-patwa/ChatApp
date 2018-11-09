@@ -19,6 +19,11 @@ app.listen(3456);
 
 // Do the Socket.IO magic:
 var io = socketio.listen(app);
+
+rooms = [];
+users = [];
+bans = [];
+
 io.sockets.on("connection", function (socket) {
     // This callback runs when a new Socket.IO connection is established.
 
@@ -32,8 +37,45 @@ io.sockets.on("connection", function (socket) {
             message: data["message"]
         }) // broadcast the message to other users
     });
+
+    //when add is broadcast add room to room list if not duplicate
+    socket.on('addRoom', function (data) {
+        for (room in rooms) {
+            if (room.equals(data["roomName"])) {
+                console.log("duplicate room");
+                io.sockets.emit("duplicateRoom", {
+                    roomName: data["roomName"]
+                });
+                return;
+            }
+        }
+        rooms.push(data["roomName"]);
+        io.sockets.emit("joinRoom", function () {
+            socket.join(data["roomName"]);
+        });
+    })
+
+    //log username for debugging purposes
+    socket.on("usernameSet", function () {
+        console.log(socket.username);
+    })
+
+    //get rooms
+    socket.on('getRooms', function () {
+        let currentUser = socket.username;
+        allowedRooms = [];
+        for (room in rooms) {
+
+        }
+
+        io.sockets.emit('currentRooms');
+    })
+
+    //callback when rooms list is requested
+
     /*console.log("socket io connection is on");
 
+    
     socket.on('disconnect', function () {
         io.emit('users-changed', {
             user: socket.nickname,
