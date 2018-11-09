@@ -3,32 +3,92 @@
 
 <head>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
     <script type="text/javascript">
         var socketio = io.connect();
         socketio.on("message_to_client", function (data) {
             //Append an HR thematic break and the escaped HTML of the new message
             document.getElementById("chatlog").appendChild(document.createElement("hr"));
             document.getElementById("chatlog").appendChild(document.createTextNode(data['message']));
+            
+            
         });
 
         function sendMessage() {
-            var msg = document.getElementById("message_input").value;
+            let msg = document.getElementById("message_input").value;
             socketio.emit("message_to_server", {
                 message: msg
             });
         }
+        function addRoom(){
+            //get room name from form
+            let newRoomName = document.getElementById("new_room_name").value;
+
+            //add room name to list
+            document.getElementById("roomList").appendChild(document.createElement("hr"));
+            document.getElementById("roomList").appendChild(document.createTextNode(newRoomName));
+
+            //emit that new room was added
+            socketio.emit("addRoom", {
+               roomName: newRoomName,
+               owner: socketio.username
+            });
+        
+        }
+
+        //set username variable of socket to username set by user
+        //emit usernameSet
+        function setUserName(){
+            let userNameInput = document.getElementById("username_input").value;
+            
+            console.log(userNameInput);
+            socketio.emit("userNameSet", function() {
+                socketio.username = userNameInput
+            });
+            $('#username_input').val("");
+           
+            showRoomsList();
+        }
+
+
+        //show the roomsList div
+        //ask server for list of rooms ("getRooms")
+        function showRoomsList(){
+            
+        }
+
+        //socket listener for rooms list ("currentRooms")
     </script>
 </head>
 
 <body>
+    <!--Set username-->
+    <!--form to set user name-->
+
+    <input type="text" id="username_input">
+    <button onclick="setUserName()">Set User Name</button> <br>
+
+
     <!--Chat Log and send chat-->
     <input type="text" id="message_input" />
     <button onclick="sendMessage()">send</button>
     <div id="chatlog"></div>
 
     <!--Rooms List and add room-->
-    <input type="text" id="new_room_name" />
-    <button onclick="addRoom()"></button>
+    <input type="text" id="new_room_name"/>
+    <!-- make a div to hold all rooms -->
+
+
+    <button onclick="addRoom()">Add New Room</button>
+    <div id="roomList">
+
+    </div>
+
+    
+
+
+    
+
 </body>
 
 </html>
