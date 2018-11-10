@@ -20,10 +20,16 @@ app.listen(3456);
 // Do the Socket.IO magic:
 var io = socketio.listen(app);
 
-rooms = [];
+rooms = ["test"];
 users = [];
 bans = [];
 
+//helper func for debugging
+function printArray(array) {
+    for (index in array) {
+        console.log(array[index]);
+    }
+}
 io.sockets.on("connection", function (socket) {
     // This callback runs when a new Socket.IO connection is established.
 
@@ -33,15 +39,16 @@ io.sockets.on("connection", function (socket) {
         // This callback runs when the server receives a new message from the client.
 
         console.log("message: " + data["message"]); // log it to the Node.JS output
-        io.sockets.emit("message_to_client", {
+        console.log(socket.roomName);
+        io.in(socket.roomName).emit("message_to_client", {
             message: data["message"]
         }) // broadcast the message to other users
     });
 
     //when add is broadcast add room to room list if not duplicate
     socket.on('addRoom', function (data) {
-        for (room in rooms) {
-            if (room.equals(data["roomName"])) {
+        for (index in rooms) {
+            if (rooms[index] == data["roomName"]) {
                 console.log("duplicate room");
                 io.sockets.emit("duplicateRoom", {
                     roomName: data["roomName"]
@@ -50,8 +57,9 @@ io.sockets.on("connection", function (socket) {
             }
         }
         rooms.push(data["roomName"]);
-        io.sockets.emit("joinRoom", function () {
-            socket.join(data["roomName"]);
+        io.sockets.emit("joinRoom", {
+            roomName: data.roomName,
+            username: socket.username
         });
     })
 
@@ -64,45 +72,36 @@ io.sockets.on("connection", function (socket) {
     socket.on('getRooms', function () {
         let currentUser = socket.username;
         allowedRooms = [];
-        for (room in rooms) {
+        for (index in rooms) {
 
+            allowedRooms.push(rooms[index]);
         }
 
-        io.sockets.emit('currentRooms');
+        //printArray(allowedRooms);
+
+        for (index in bans) {
+            if (bans[index].username.equals(currentUser)) {
+                Array.remove(allowedRooms, bans[index].roomName);
+            }
+        }
+
+        //printArray(allowedRooms);
+
+
+
+        socket.emit('currentRooms', {
+            rooms: allowedRooms
+        });
+
+
     })
 
-    //callback when rooms list is requested
-
-    /*console.log("socket io connection is on");
-
-    
-    socket.on('disconnect', function () {
-        io.emit('users-changed', {
-            user: socket.nickname,
-            event: 'left',
-            room: socket.roomName
-        });
-    });
-
-    socket.on('set-nickname', (nickname) => {
-        socket.nickname = nickname;
-        //roomName = socket.roomName;
-        io.emit('users-changed', {
-            user: nickname,
-            event: 'joined',
-            room: socket.roomName
-        });
-    });
-
-    socket.on('choose-room', (roomName) => {
-        socket.roomName = roomName;
+    socket.on('joinRoom', (data) => {
+        console.log(data.roomName);
+        socket.join(data.roomName);
+        socket.roomName = data.roomName;
+        io.in(data.roomName).emit("roomJoined", {
+            username: data.username
+        })
     })
-
-    socket.on('add-message', (message) => {
-        io.emit('message', {
-            text: message.text,
-            from: socket.nickname,
-            created: new Date()
-        });
-    });*/
 });

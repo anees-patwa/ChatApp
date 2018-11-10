@@ -10,17 +10,19 @@
             //Append an HR thematic break and the escaped HTML of the new message
             document.getElementById("chatlog").appendChild(document.createElement("hr"));
             document.getElementById("chatlog").appendChild(document.createTextNode(data['message']));
-            
-            
+
+
         });
 
         function sendMessage() {
             let msg = document.getElementById("message_input").value;
+            $("#message_input").empty();
             socketio.emit("message_to_server", {
                 message: msg
             });
         }
-        function addRoom(){
+
+        function addRoom() {
             //get room name from form
             let newRoomName = document.getElementById("new_room_name").value;
 
@@ -30,34 +32,65 @@
 
             //emit that new room was added
             socketio.emit("addRoom", {
-               roomName: newRoomName,
-               owner: socketio.username
+                roomName: newRoomName,
+                owner: socketio.username
             });
-        
+
         }
 
         //set username variable of socket to username set by user
         //emit usernameSet
-        function setUserName(){
+        function setUserName() {
             let userNameInput = document.getElementById("username_input").value;
-            
+
             console.log(userNameInput);
-            socketio.emit("userNameSet", function() {
+            socketio.emit("userNameSet", function () {
                 socketio.username = userNameInput
             });
             $('#username_input').val("");
-           
-            showRoomsList();
+
+            socketio.emit("getRooms");
         }
 
-
+        //helper function to debug
+        function printArray2(array2) {
+            for (index in array2) {
+                console.log(array2[index]);
+            }
+        }
         //show the roomsList div
         //ask server for list of rooms ("getRooms")
-        function showRoomsList(){
-            
+        function showRoomsList(rooms) {
+            $("#roomsList").empty();
+            //printArray2(rooms);
+            for (index in rooms) {
+                console.log(rooms[index]);
+                $("#roomList").append(document.createElement("hr"));
+                $("#roomList").append(document.createTextNode(rooms[index]));
+                $("<button>", {
+                    id: rooms[index]
+                }).appendTo("#roomList");
+                $("#" + rooms[index]).append(document.createTextNode("Join room"))
+                $("#" + rooms[index]).click(() => {
+                    socketio.emit("joinRoom", {
+                        username: socketio.username,
+                        roomName: rooms[index]
+                    })
+                })
+            }
         }
 
+        socketio.on("roomJoined", (data) => {
+            $(".rooms").hide();
+            $(".sign_in").hide();
+            $(".message").show();
+            alert(data.username + " has joined the room");
+        })
+
         //socket listener for rooms list ("currentRooms")
+        socketio.on("currentRooms", function (data) {
+            showRoomsList(data.rooms)
+        });
     </script>
 </head>
 
@@ -65,29 +98,29 @@
     <!--Set username-->
     <!--form to set user name-->
 
-    <input type="text" id="username_input">
-    <button onclick="setUserName()">Set User Name</button> <br>
+    <input type="text" id="username_input" class="sign_in">
+    <button onclick="setUserName()" class="sign_in">Set User Name</button> <br>
 
 
     <!--Chat Log and send chat-->
-    <input type="text" id="message_input" />
-    <button onclick="sendMessage()">send</button>
-    <div id="chatlog"></div>
+    <input type="text" id="message_input" class="message" />
+    <button onclick="sendMessage()" class="message">send</button>
+    <div id="chatlog" class="message"></div>
 
     <!--Rooms List and add room-->
-    <input type="text" id="new_room_name"/>
+    <input type="text" id="new_room_name" class="rooms" />
     <!-- make a div to hold all rooms -->
 
 
-    <button onclick="addRoom()">Add New Room</button>
-    <div id="roomList">
+    <button onclick="addRoom()" class="rooms">Add New Room</button>
+    <div id="roomList" class="rooms">
 
     </div>
 
-    
 
 
-    
+
+
 
 </body>
 
