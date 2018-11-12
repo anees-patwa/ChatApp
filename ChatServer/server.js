@@ -38,17 +38,17 @@ io.sockets.on("connection", function (socket) {
     socket.on('message_to_server', function (data) {
         // This callback runs when the server receives a new message from the client.
 
-        console.log("message: " + data["message"]); // log it to the Node.JS output
-        console.log(socket.roomName);
+        console.log("message: " + data["message"] + " in room " + socket.roomName); // log it to the Node.JS output
         io.in(socket.roomName).emit("message_to_client", {
-            message: data["message"]
+            message: data["message"],
+            username: socket.username
         }) // broadcast the message to other users
     });
 
     //when add is broadcast add room to room list if not duplicate
     socket.on('addRoom', function (data) {
         for (index in rooms) {
-            if (rooms[index] == data["roomName"]) {
+            if (rooms[index].roomName == data["roomName"]) {
                 console.log("duplicate room");
                 io.sockets.emit("duplicateRoom", {
                     roomName: data["roomName"]
@@ -56,15 +56,16 @@ io.sockets.on("connection", function (socket) {
                 return;
             }
         }
-        rooms.push(data["roomName"]);
-        io.sockets.emit("joinRoom", {
-            roomName: data.roomName,
-            username: socket.username
+        rooms.push({
+            roomName: data["roomName"],
+            owner: socket.username
         });
+
     })
 
     //log username for debugging purposes
-    socket.on("usernameSet", function () {
+    socket.on("userNameSet", (data) => {
+        socket.username = data.username;
         console.log(socket.username);
     })
 
@@ -85,23 +86,38 @@ io.sockets.on("connection", function (socket) {
             }
         }
 
-        //printArray(allowedRooms);
+        console.log("allowed rooms sent below");
+        printArray(allowedRooms);
+        console.log("end of allowed rooms");
 
 
 
         socket.emit('currentRooms', {
-            rooms: allowedRooms
+            rooms: allowedRooms,
+            username: socket.username
         });
 
 
     })
 
     socket.on('joinRoom', (data) => {
-        console.log(data.roomName);
+        console.log("room from emit " + data.roomName);
         socket.join(data.roomName);
         socket.roomName = data.roomName;
+        console.log("socket roomName " + socket.roomName);
+        //console.log("username from socket " + socket.username);
         io.in(data.roomName).emit("roomJoined", {
-            username: data.username
+            username: socket.username
+        })
+    })
+
+    socket.on('leaveRoom', () => {
+        let user = socket.username;
+        let roomName = socket.roomName;
+        socket.roomName = null;
+        socket.leave(roomName);
+        io.in(roomName).emit('roomLeft', {
+            username: user
         })
     })
 });

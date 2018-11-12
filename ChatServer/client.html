@@ -10,6 +10,9 @@
             //Append an HR thematic break and the escaped HTML of the new message
             document.getElementById("chatlog").appendChild(document.createElement("hr"));
             document.getElementById("chatlog").appendChild(document.createTextNode(data['message']));
+            let sentBy = "sent by " + data.username;
+            $("<br>").appendTo("#chatlog");
+            $("#chatlog").append(document.createTextNode(sentBy));
 
 
         });
@@ -27,14 +30,15 @@
             let newRoomName = document.getElementById("new_room_name").value;
 
             //add room name to list
-            document.getElementById("roomList").appendChild(document.createElement("hr"));
-            document.getElementById("roomList").appendChild(document.createTextNode(newRoomName));
+            /*document.getElementById("roomList").appendChild(document.createElement("hr"));
+            document.getElementById("roomList").appendChild(document.createTextNode(newRoomName));*/
 
             //emit that new room was added
             socketio.emit("addRoom", {
                 roomName: newRoomName,
-                owner: socketio.username
             });
+
+            socketio.emit("getRooms");
 
         }
 
@@ -44,8 +48,8 @@
             let userNameInput = document.getElementById("username_input").value;
 
             console.log(userNameInput);
-            socketio.emit("userNameSet", function () {
-                socketio.username = userNameInput
+            socketio.emit("userNameSet", {
+                username: userNameInput
             });
             $('#username_input').val("");
 
@@ -61,20 +65,26 @@
         //show the roomsList div
         //ask server for list of rooms ("getRooms")
         function showRoomsList(rooms) {
-            $("#roomsList").empty();
-            //printArray2(rooms);
+            $("#roomList").empty();
+            console.log("begin allowed rooms");
+            printArray2(rooms);
+            console.log("end allowed rooms");
             for (index in rooms) {
-                console.log(rooms[index]);
+                console.log("id: " + rooms[index].roomName);
                 $("#roomList").append(document.createElement("hr"));
-                $("#roomList").append(document.createTextNode(rooms[index]));
+                $("#roomList").append(document.createTextNode(rooms[index].roomName));
                 $("<button>", {
-                    id: rooms[index]
+                    id: rooms[index].roomName
                 }).appendTo("#roomList");
-                $("#" + rooms[index]).append(document.createTextNode("Join room"))
-                $("#" + rooms[index]).click(() => {
+                $("#" + rooms[index].roomName).append(document.createTextNode("Join room"));
+                console.log("id of click " + rooms[index].roomName);
+                $("#" + rooms[index].roomName).click((e) => {
+                    //console.log(rooms[index]);
+                    console.log("user joining room with name " + e.target.id);
+                    //console.log("user joining room " + socketio.username)
                     socketio.emit("joinRoom", {
                         username: socketio.username,
-                        roomName: rooms[index]
+                        roomName: e.target.id
                     })
                 })
             }
@@ -84,13 +94,26 @@
             $(".rooms").hide();
             $(".sign_in").hide();
             $(".message").show();
-            alert(data.username + " has joined the room");
+            console.log("joined user is " + data.username);
+            //console.log("joined user from socket " + socketio.username);
+            //alert(socketio.username + " has joined the room");
         })
 
         //socket listener for rooms list ("currentRooms")
         socketio.on("currentRooms", function (data) {
             showRoomsList(data.rooms)
         });
+
+        //leave a room
+        function leaveRoom() {
+            socketio.emit("leaveRoom");
+            $(".message").hide();
+            $(".rooms").show();
+        }
+
+        socketio.on('roomLeft', (data) => {
+            console.log(data.username + " has left the room");
+        })
     </script>
 </head>
 
@@ -102,9 +125,10 @@
     <button onclick="setUserName()" class="sign_in">Set User Name</button> <br>
 
 
-    <!--Chat Log and send chat-->
+    <!--Chat Log and send chat and leave chat-->
     <input type="text" id="message_input" class="message" />
-    <button onclick="sendMessage()" class="message">send</button>
+    <button onclick="sendMessage()" class="message">Send</button>
+    <button onclick="leaveRoom()" class="message">Leave</button>
     <div id="chatlog" class="message"></div>
 
     <!--Rooms List and add room-->
@@ -116,6 +140,10 @@
     <div id="roomList" class="rooms">
 
     </div>
+
+
+
+    <!--Kick and ban forms-->
 
 
 
