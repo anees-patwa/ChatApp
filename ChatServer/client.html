@@ -2,14 +2,44 @@
 <html>
 
 <head>
+    <!-- <link rel="stylesheet" href="client.css" type="text/css"> -->
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
     <script type="text/javascript">
         var socketio = io.connect();
+        let thisUsername;
         socketio.on("message_to_client", function (data) {
-            //Append an HR thematic break and the escaped HTML of the new message
             document.getElementById("chatlog").appendChild(document.createElement("hr"));
-            document.getElementById("chatlog").appendChild(document.createTextNode(data['message']));
+            //check for image
+
+            if (data.message.substring(data.message.length - 4) == ".png" || data.message.substring(data.message
+                    .length - 4) == ".jpg" || data.message.substring(data.message.length - 4) == ".gif") {
+                $("<img>", {
+                    src: data.message,
+                    alt: "Invalid Image"
+                }).appendTo("#chatlog");
+            } else if (data.message.substring(data.message.length - 4) == ".pdf") {
+                $("<embed>", {
+                    src: data.message,
+                    type: "application/pdf",
+                    width: "100%",
+                    height: "400px",
+                    alt: "File invalid"
+                }).appendTo("#chatlog");
+            } else if (data.message.substring(data.message.length - 5) == ".xslx" || data.message.substring(
+                    data.message.length - 5) == ".docx" || data.message.substring(data.message.length - 5) ==
+                ".pptx") {
+                let link = $("<a>", {
+                    href: data.message,
+                }).append(document.createTextNode("Download"));
+
+                link.appendTo("#chatlog");
+            } else {
+                //Append an HR thematic break and the escaped HTML of the new message
+
+                document.getElementById("chatlog").appendChild(document.createTextNode(data['message']));
+            }
+
             let sentBy = "sent by " + data.username;
             $("<br>").appendTo("#chatlog");
             $("#chatlog").append(document.createTextNode(sentBy));
@@ -17,26 +47,51 @@
 
         });
 
-        function sendMessage() {
-            let msg = document.getElementById("message_input").value;
-            $("#message_input").empty();
-            socketio.emit("message_to_server", {
-                message: msg
-            });
+        function sendMessage(isPrivate) {
+            if (!isPrivate) {
+                let msg = document.getElementById("message_input").value;
+                $("#message_input").empty();
+                socketio.emit("message_to_server", {
+                    message: msg
+                });
+            } else {
+                let msg = $("#message_input").val();
+                let userTo = $("#user_to").val();
+                $("#message_input").empty();
+                $("#user_to").empty();
+                socketio.emit("private_message_server", {
+                    username: userTo,
+                    message: msg
+                })
+
+            }
+
         }
 
-        function addRoom() {
+        function addRoom(isPrivate) {
             //get room name from form
             let newRoomName = document.getElementById("new_room_name").value;
+            $("#new_room_name").empty();
 
             //add room name to list
             /*document.getElementById("roomList").appendChild(document.createElement("hr"));
             document.getElementById("roomList").appendChild(document.createTextNode(newRoomName));*/
+            if (isPrivate) {
+                let pass = $("#new_priv_room_pass").val();
+                $("#new_priv_room_pass").empty();
+                socketio.emit("addRoom", {
+                    roomName: newRoomName,
+                    private: true,
+                    password: pass
+                });
+            } else {
+                //emit that new room was added
+                socketio.emit("addRoom", {
+                    roomName: newRoomName,
+                    private: false
+                });
+            }
 
-            //emit that new room was added
-            socketio.emit("addRoom", {
-                roomName: newRoomName,
-            });
 
             socketio.emit("getRooms");
 
@@ -46,13 +101,16 @@
         //emit usernameSet
         function setUserName() {
             let userNameInput = document.getElementById("username_input").value;
+            thisUsername = userNameInput;
+
 
             console.log(userNameInput);
             socketio.emit("userNameSet", {
                 username: userNameInput
             });
             $('#username_input').val("");
-
+            $(".rooms").show();
+            $(".sign_in").hide();
             socketio.emit("getRooms");
         }
 
@@ -72,20 +130,35 @@
             for (index in rooms) {
                 console.log("id: " + rooms[index].roomName);
                 $("#roomList").append(document.createElement("hr"));
-                $("#roomList").append(document.createTextNode(rooms[index].roomName));
+                if (rooms[index].private) {
+                    $("#roomList").append(document.createTextNode(rooms[index].roomName + " (private)"));
+                } else {
+                    $("#roomList").append(document.createTextNode(rooms[index].roomName));
+                }
                 $("<button>", {
-                    id: rooms[index].roomName
+                    id: rooms[index].roomName,
+                    isPrivate: rooms[index].private,
+                    class: "ListButton"
                 }).appendTo("#roomList");
                 $("#" + rooms[index].roomName).append(document.createTextNode("Join room"));
                 console.log("id of click " + rooms[index].roomName);
                 $("#" + rooms[index].roomName).click((e) => {
                     //console.log(rooms[index]);
                     console.log("user joining room with name " + e.target.id);
+                    console.log("private or not? " + e.target.getAttribute("isPrivate"));
                     //console.log("user joining room " + socketio.username)
-                    socketio.emit("joinRoom", {
-                        username: socketio.username,
-                        roomName: e.target.id
-                    })
+                    if (e.target.getAttribute("isPrivate")) {
+                        let userPass = prompt("Please type the password");
+                        socketio.emit("joinPrivRoom", {
+                            roomName: e.target.id,
+                            password: userPass
+                        })
+                    } else {
+                        socketio.emit("joinPubRoom", {
+                            roomName: e.target.id
+                        })
+                    }
+
                 })
             }
         }
@@ -95,8 +168,20 @@
             $(".sign_in").hide();
             $(".message").show();
             console.log("joined user is " + data.username);
+
+
+
+
+            $("#userList").empty();
             //console.log("joined user from socket " + socketio.username);
             //alert(socketio.username + " has joined the room");
+            let userList = data.users;
+            //printArray2(userList);
+            for (index in userList) {
+                let user = document.createElement("li")
+                user.appendChild(document.createTextNode(userList[index]));
+                $("#userList").append(user);
+            }
         })
 
         //socket listener for rooms list ("currentRooms")
@@ -108,35 +193,120 @@
         function leaveRoom() {
             socketio.emit("leaveRoom");
             $(".message").hide();
+            $(".owner").hide();
             $(".rooms").show();
         }
 
         socketio.on('roomLeft', (data) => {
             console.log(data.username + " has left the room");
+            if (data.username == thisUsername) {
+                $(".message").hide();
+                $(".owner").hide();
+                $(".rooms").show();
+                socketio.emit("getRooms");
+            }
+            $("#userList").empty();
+            //console.log("joined user from socket " + socketio.username);
+            //alert(socketio.username + " has joined the room");
+            let userList = data.users;
+            //printArray2(userList);
+            for (index in userList) {
+                let user = document.createElement("li")
+                user.appendChild(document.createTextNode(userList[index]));
+                $("#userList").append(user);
+            }
+
+        })
+
+        socketio.on('private_message_client', (data) => {
+            alert("Private message from: " + data.from);
+            alert(data.msg);
+        })
+
+        //kick user
+        function kickUser() {
+            let userToKick = $("#kick_user_input").val();
+            $("#kick_user_input").empty();
+            socketio.emit('kickUser', {
+                username: userToKick
+            });
+        }
+
+        //ban user
+        function banUser() {
+            let userToBan = $("#ban_user_input").val();
+            $("#ban_user_input").empty();
+            socketio.emit('banUser', {
+                username: userToBan
+            });
+        }
+
+        socketio.on("kick", () => {
+            $(".message").hide();
+            $(".owner").hide();
+            $(".rooms").show();
+            socketio.emit("getRooms");
+        })
+
+        socketio.on("owner", (data) => {
+            if (data.username == thisUsername) {
+                $(".owner").show();
+            }
         })
     </script>
 </head>
 
 <body>
+    <style type="text/css">
+        .message {
+            display: none;
+        }
+
+        .rooms {
+            display: none;
+        }
+
+        .ListButton {
+            margin-left: 5%;
+        }
+
+        .owner {
+            display: none;
+        }
+    </style>
     <!--Set username-->
     <!--form to set user name-->
 
-    <input type="text" id="username_input" class="sign_in">
+    <input type="text" id="username_input" class="sign_in" placeholder="Username">
     <button onclick="setUserName()" class="sign_in">Set User Name</button> <br>
 
 
     <!--Chat Log and send chat and leave chat-->
-    <input type="text" id="message_input" class="message" />
-    <button onclick="sendMessage()" class="message">Send</button>
+    <input type="text" id="message_input" class="message" placeholder="message" />
+    <button onclick="sendMessage(false)" class="message">Send</button>
+    <input type="text" id="user_to" class="message" placeholder="Username(optional)" />
+
+    <button onclick="sendMessage(true)" class="message">Send Private Message</button>
+    <br>
     <button onclick="leaveRoom()" class="message">Leave</button>
+    <br>
+    <input type="text" id="kick_user_input" class="owner" placeholder="Username to kick" />
+    <button onclick="kickUser()" class="owner">Kick</button>
+    <input type="text" id="ban_user_input" class="owner" placeholder="Username to ban" />
+    <button onclick="banUser()" class="owner">Ban</button>
     <div id="chatlog" class="message"></div>
+    <h3 class="message">Users in Room</h3>
+    <div class="message">
+        <ul id="userList" class="message">
+
+        </ul>
+    </div>
 
     <!--Rooms List and add room-->
     <input type="text" id="new_room_name" class="rooms" />
-    <!-- make a div to hold all rooms -->
-
-
-    <button onclick="addRoom()" class="rooms">Add New Room</button>
+    <button onclick="addRoom(false)" class="rooms">Add New Public Room</button>
+    <input type="password" id="new_priv_room_pass" class="rooms" placeholder="Password(optional)" />
+    <button onclick="addRoom(true)" class="rooms">Add New Private Room</button>
     <div id="roomList" class="rooms">
 
     </div>
