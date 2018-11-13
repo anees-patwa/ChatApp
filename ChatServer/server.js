@@ -37,6 +37,7 @@ function printArray(array) {
         console.log(array[index]);
     }
 }
+
 io.sockets.on("connection", function (socket) {
     // This callback runs when a new Socket.IO connection is established.
 
@@ -46,10 +47,12 @@ io.sockets.on("connection", function (socket) {
         // This callback runs when the server receives a new message from the client.
 
         console.log("message: " + data["message"] + " in room " + socket.roomName); // log it to the Node.JS output
+
+        // broadcast the message to other users in room
         io.in(socket.roomName).emit("message_to_client", {
             message: data["message"],
             username: socket.username
-        }) // broadcast the message to other users
+        })
     });
 
     //when add is broadcast add room to room list if not duplicate
@@ -63,6 +66,9 @@ io.sockets.on("connection", function (socket) {
                 return;
             }
         }
+
+        //push different properties if room is private or not
+        //push room object to rooms array
         if (data.private) {
             rooms.push({
                 roomName: data.roomName,
@@ -84,23 +90,25 @@ io.sockets.on("connection", function (socket) {
         io.of('/').clients((error, clients) => {
             if (error) throw error;
             for (let i = 0; i < clients.length; i++) {
+                //get all connected sockets
                 let socketTo = io.of('/').connected[clients[i]];
 
                 let currentUser = socketTo.username;
                 let allowedRooms = rooms.slice();
 
-                //printArray(allowedRooms);
-
+                //remove rooms in which user is banned from
                 for (index in bans) {
                     if (bans[index].username.equals(currentUser)) {
                         allowedRooms = allowedRooms.filter(room => room.roomName != bans[index].roomName);
                     }
                 }
 
+                //print allowed rooms in terminal console
                 console.log("allowed rooms after add room sent below");
                 printArray(allowedRooms);
                 console.log("end of allowed rooms");
 
+                //emit list of current rooms
                 io.to(socketTo.id).emit('currentRooms', {
                     rooms: allowedRooms,
                     //username: socket.username,
@@ -128,8 +136,7 @@ io.sockets.on("connection", function (socket) {
         let currentUser = socket.username;
         let allowedRooms = rooms.slice();
 
-        //printArray(allowedRooms);
-
+        //remove rooms where user is banned
         for (index in bans) {
             if (bans[index].username == currentUser) {
                 allowedRooms = allowedRooms.filter(room => room.roomName != bans[index].roomName);
@@ -140,8 +147,7 @@ io.sockets.on("connection", function (socket) {
         printArray(allowedRooms);
         console.log("end of allowed rooms");
 
-
-
+        //emit allowed rooms to socket that wanted it
         socket.emit('currentRooms', {
             rooms: allowedRooms,
             username: socket.username
@@ -150,19 +156,17 @@ io.sockets.on("connection", function (socket) {
 
     })
 
+    //listener for joining private room
     socket.on("joinPrivRoom", (data) => {
         console.log("password " + data.password);
+
+        //get room object
         let roomToJoin;
         for (index in rooms) {
             if (rooms[index].roomName == data.roomName) {
                 roomToJoin = rooms[index];
                 break;
             }
-        }
-
-        let isOwner = false;
-        if (roomToJoin.owner == socket.username) {
-            isOwner = true;
         }
 
         //password check
@@ -199,11 +203,12 @@ io.sockets.on("connection", function (socket) {
                 }
             })
         } else {
-            //emit error message
+            //log incorrect password
             console.log("incorrect password");
         }
     })
 
+    //listener for joining public room
     socket.on('joinPubRoom', (data) => {
         console.log("room from emit " + data.roomName);
         socket.join(data.roomName);
@@ -223,12 +228,11 @@ io.sockets.on("connection", function (socket) {
                 break;
             }
         }
-        //printArray(userList);
-        //console.log("username from socket " + socket.username);
+
         io.in(data.roomName).emit("roomJoined", {
             username: socket.username,
             users: userList
-            //owner: isOwner
+
         })
 
 
@@ -249,9 +253,12 @@ io.sockets.on("connection", function (socket) {
     })
 
     socket.on('leaveRoom', () => {
+
         let user = socket.username;
         let roomLeft = socket.roomName;
         let roomLeftObject;
+
+        //remove user from room's users array
         for (index in rooms) {
             if (rooms[index].roomName == roomLeft) {
                 let userIndex = rooms[index].users.indexOf(user);
@@ -260,6 +267,8 @@ io.sockets.on("connection", function (socket) {
                 break;
             }
         }
+
+        //reset socke values and leave room
         socket.roomName = null;
         socket.leave(roomLeft);
         console.log(user + " left " + roomLeft);
@@ -269,12 +278,14 @@ io.sockets.on("connection", function (socket) {
         })
     })
 
+    //private message
     socket.on('private_message_server', (data) => {
         let userTo = data.username;
         let userFrom = socket.username;
 
         console.log("private message from " + userFrom + " to " + userTo + " message: " + data.message);
 
+        //send to individual user
         io.of('/').clients((error, clients) => {
             if (error) throw error;
             for (let i = 0; i < clients.length; i++) {
@@ -289,17 +300,6 @@ io.sockets.on("connection", function (socket) {
                 }
             }
         })
-        /*printArray(socketsList);
-        for (socketTo in socketsList) {
-            if (socketTo.username == userTo) {
-                console.log(socketTo.id);
-                socket.broadcast.to(socketTo.id).emit('private_message_client', {
-                    msg: data.message,
-                    from: userFrom
-                })
-                break;
-            }
-        }*/
     })
 
     socket.on('kickUser', (data) => {
@@ -307,7 +307,7 @@ io.sockets.on("connection", function (socket) {
         //let roomToKickFrom = socket.roomName;
         let userList = [];
 
-        //let user = socket.username;
+        //remove user from room 
         let roomLeft = socket.roomName;
         let roomKickedFrom;
         for (index in rooms) {
@@ -325,7 +325,7 @@ io.sockets.on("connection", function (socket) {
 
 
 
-
+        //find user and kick them from room
         io.of('/').clients((error, clients) => {
             if (error) throw error;
             for (let i = 0; i < clients.length; i++) {
@@ -340,8 +340,7 @@ io.sockets.on("connection", function (socket) {
             }
         })
 
-        /*socket.roomName = null;
-        socket.leave(roomLeft);*/
+        //emit that the user left the room
         console.log(user + " left " + roomLeft);
         io.in(roomLeft).emit('roomLeft', {
             username: user,

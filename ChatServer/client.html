@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <!-- <link rel="stylesheet" href="client.css" type="text/css"> -->
+    <title>Chat App</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
-    <script type="text/javascript">
+    <script>
         var socketio = io.connect();
         let thisUsername;
         socketio.on("message_to_client", function (data) {
@@ -259,10 +260,7 @@
             }
         })
     </script>
-</head>
-
-<body>
-    <style type="text/css">
+    <style>
         .message {
             display: none;
         }
@@ -279,6 +277,10 @@
             display: none;
         }
     </style>
+</head>
+
+<body>
+
     <!--Set username-->
     <!--form to set user name-->
 
