@@ -50,15 +50,15 @@
         function sendMessage(isPrivate) {
             if (!isPrivate) {
                 let msg = document.getElementById("message_input").value;
-                $("#message_input").empty();
+                $("#message_input").val($("#message_input").attr("placeholder"));
                 socketio.emit("message_to_server", {
                     message: msg
                 });
             } else {
                 let msg = $("#message_input").val();
                 let userTo = $("#user_to").val();
-                $("#message_input").empty();
-                $("#user_to").empty();
+                $("#message_input").val($("#message_input").attr("placeholder"));
+                $("#user_to").val($("#user_to").attr("placeholder"));
                 socketio.emit("private_message_server", {
                     username: userTo,
                     message: msg
@@ -71,14 +71,14 @@
         function addRoom(isPrivate) {
             //get room name from form
             let newRoomName = document.getElementById("new_room_name").value;
-            $("#new_room_name").empty();
+            $("#new_room_name").val($("#new_room_name").attr("placeholder"));
 
             //add room name to list
             /*document.getElementById("roomList").appendChild(document.createElement("hr"));
             document.getElementById("roomList").appendChild(document.createTextNode(newRoomName));*/
             if (isPrivate) {
                 let pass = $("#new_priv_room_pass").val();
-                $("#new_priv_room_pass").empty();
+                $("#new_priv_room_pass").val($("#new_priv_room_pass").attr("placeholder"));
                 socketio.emit("addRoom", {
                     roomName: newRoomName,
                     private: true,
@@ -108,7 +108,7 @@
             socketio.emit("userNameSet", {
                 username: userNameInput
             });
-            $('#username_input').val("");
+            $('#username_input').val($("#username_input").attr("placeholder"));
             $(".rooms").show();
             $(".sign_in").hide();
             socketio.emit("getRooms");
@@ -231,7 +231,7 @@
         //kick user
         function kickUser() {
             let userToKick = $("#kick_user_input").val();
-            $("#kick_user_input").empty();
+            $("#kick_user_input").val($("#kick_user_input").attr("placeholder"));
             socketio.emit('kickUser', {
                 username: userToKick
             });
@@ -240,7 +240,7 @@
         //ban user
         function banUser() {
             let userToBan = $("#ban_user_input").val();
-            $("#ban_user_input").empty();
+            $("#ban_user_input").val($("#ban_user_input").attr("placeholder"));
             socketio.emit('banUser', {
                 username: userToBan
             });
