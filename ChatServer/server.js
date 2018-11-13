@@ -80,6 +80,40 @@ io.sockets.on("connection", function (socket) {
             });
         }
 
+        //emit to everyone their allowed rooms
+        io.of('/').clients((error, clients) => {
+            if (error) throw error;
+            for (let i = 0; i < clients.length; i++) {
+                let socketTo = io.of('/').connected[clients[i]];
+
+                let currentUser = socketTo.username;
+                let allowedRooms = rooms.slice();
+
+                //printArray(allowedRooms);
+
+                for (index in bans) {
+                    if (bans[index].username.equals(currentUser)) {
+                        allowedRooms = allowedRooms.filter(room => room.roomName != bans[index].roomName);
+                    }
+                }
+
+                console.log("allowed rooms after add room sent below");
+                printArray(allowedRooms);
+                console.log("end of allowed rooms");
+
+                io.to(socketTo.id).emit('currentRooms', {
+                    rooms: allowedRooms,
+                    //username: socket.username,
+                    addedRoom: true
+                });
+
+
+            }
+        })
+
+
+
+
 
     })
 
@@ -92,7 +126,7 @@ io.sockets.on("connection", function (socket) {
     //get rooms
     socket.on('getRooms', function () {
         let currentUser = socket.username;
-        allowedRooms = rooms.slice();
+        let allowedRooms = rooms.slice();
 
         //printArray(allowedRooms);
 
@@ -193,8 +227,8 @@ io.sockets.on("connection", function (socket) {
         //console.log("username from socket " + socket.username);
         io.in(data.roomName).emit("roomJoined", {
             username: socket.username,
-            users: userList,
-            owner: isOwner
+            users: userList
+            //owner: isOwner
         })
 
 
@@ -217,10 +251,12 @@ io.sockets.on("connection", function (socket) {
     socket.on('leaveRoom', () => {
         let user = socket.username;
         let roomLeft = socket.roomName;
+        let roomLeftObject;
         for (index in rooms) {
             if (rooms[index].roomName == roomLeft) {
                 let userIndex = rooms[index].users.indexOf(user);
                 rooms[index].users.splice(userIndex, 1);
+                roomLeftObject = rooms[index];
                 break;
             }
         }
@@ -228,7 +264,8 @@ io.sockets.on("connection", function (socket) {
         socket.leave(roomLeft);
         console.log(user + " left " + roomLeft);
         io.in(roomLeft).emit('roomLeft', {
-            username: user
+            username: user,
+            users: roomLeftObject.users
         })
     })
 

@@ -93,7 +93,7 @@
             }
 
 
-            socketio.emit("getRooms");
+            //socketio.emit("getRooms");
 
         }
 
@@ -142,12 +142,13 @@
                 }).appendTo("#roomList");
                 $("#" + rooms[index].roomName).append(document.createTextNode("Join room"));
                 console.log("id of click " + rooms[index].roomName);
+                console.log(rooms[index].roomName + " is private: " + rooms[index].private)
                 $("#" + rooms[index].roomName).click((e) => {
                     //console.log(rooms[index]);
                     console.log("user joining room with name " + e.target.id);
                     console.log("private or not? " + e.target.getAttribute("isPrivate"));
                     //console.log("user joining room " + socketio.username)
-                    if (e.target.getAttribute("isPrivate")) {
+                    if (e.target.getAttribute("isPrivate") == "true") {
                         let userPass = prompt("Please type the password");
                         socketio.emit("joinPrivRoom", {
                             roomName: e.target.id,
@@ -167,6 +168,7 @@
             $(".rooms").hide();
             $(".sign_in").hide();
             $(".message").show();
+            $("#chatlog").empty();
             console.log("joined user is " + data.username);
 
 
@@ -186,6 +188,9 @@
 
         //socket listener for rooms list ("currentRooms")
         socketio.on("currentRooms", function (data) {
+            if (data.addedRoom) {
+                console.log("room added");
+            }
             showRoomsList(data.rooms)
         });
 
@@ -288,11 +293,13 @@
 
     <button onclick="sendMessage(true)" class="message">Send Private Message</button>
     <br>
-    <button onclick="leaveRoom()" class="message">Leave</button>
+    <button onclick="leaveRoom()" class="message">Leave Room</button>
     <br>
-    <input type="text" id="kick_user_input" class="owner" placeholder="Username to kick" />
+    <h3 class="owner">Admin Tools</h3>
+    <br>
+    <input type="text" id="kick_user_input" class="owner" placeholder="Username to Kick" />
     <button onclick="kickUser()" class="owner">Kick</button>
-    <input type="text" id="ban_user_input" class="owner" placeholder="Username to ban" />
+    <input type="text" id="ban_user_input" class="owner" placeholder="Username to Ban" />
     <button onclick="banUser()" class="owner">Ban</button>
     <div id="chatlog" class="message"></div>
     <h3 class="message">Users in Room</h3>
@@ -303,9 +310,9 @@
     </div>
 
     <!--Rooms List and add room-->
-    <input type="text" id="new_room_name" class="rooms" />
+    <input type="text" id="new_room_name" class="rooms" placeholder="Room Name" />
     <button onclick="addRoom(false)" class="rooms">Add New Public Room</button>
-    <input type="password" id="new_priv_room_pass" class="rooms" placeholder="Password(optional)" />
+    <input type="password" id="new_priv_room_pass" class="rooms" placeholder="Room Password" />
     <button onclick="addRoom(true)" class="rooms">Add New Private Room</button>
     <div id="roomList" class="rooms">
 
