@@ -131,7 +131,7 @@ io.sockets.on("connection", function (socket) {
         //printArray(allowedRooms);
 
         for (index in bans) {
-            if (bans[index].username.equals(currentUser)) {
+            if (bans[index].username == currentUser) {
                 allowedRooms = allowedRooms.filter(room => room.roomName != bans[index].roomName);
             }
         }
@@ -347,6 +347,60 @@ io.sockets.on("connection", function (socket) {
             username: user,
             users: roomKickedFrom.users
         })
+
+    })
+
+    socket.on('banUser', (data) => {
+        //add user to bans array
+        let userToBan = data.username;
+        let roomToBan = socket.roomName;
+        bans.push({
+            username: userToBan,
+            roomName: roomToBan
+        });
+
+        //kick user from room
+        //let user = socket.username;
+        let roomLeft = socket.roomName;
+        let roomKickedFrom;
+        for (index in rooms) {
+            if (rooms[index].roomName == roomLeft) {
+                let userIndex = rooms[index].users.indexOf(userToBan);
+                roomKickedFrom = rooms[index];
+                console.log(roomKickedFrom.users);
+                roomKickedFrom.users.splice(userIndex, 1);
+                console.log(roomKickedFrom.users);
+                //userList = roomKickedFrom.users.splice();
+                break;
+            }
+        }
+
+
+
+
+
+        io.of('/').clients((error, clients) => {
+            if (error) throw error;
+            for (let i = 0; i < clients.length; i++) {
+                let socketTo = io.of('/').connected[clients[i]];
+                if (socketTo.username == userToBan) {
+                    console.log(socketTo.id);
+                    socketTo.leave(roomLeft);
+                    io.to(socketTo.id).emit("kicked");
+                    socketTo.roomName == null;
+                    break;
+                }
+            }
+        })
+
+        /*socket.roomName = null;
+        socket.leave(roomLeft);*/
+        console.log(userToBan + " left " + roomLeft);
+        io.in(roomLeft).emit('roomLeft', {
+            username: userToBan,
+            users: roomKickedFrom.users
+        })
+
 
     })
 });
