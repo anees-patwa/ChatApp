@@ -1,6 +1,7 @@
 
 # Project Description:
-    Using Google Civics API, the ionic framework, node.js, express, and MongoDB we will be creating a web application that will allow users to look up their local politicians, polling locations, and early voting locations. Also, we will allow users to submit information about what bills and laws candidates have voted on, and users can then comment on these. 
+Using Google Civics API, the ionic framework, node.js, express, and MongoDB we will be creating a web application that will allow users to look up their local politicians, polling locations, and early voting locations. 
+Also, we will allow users to submit information about what bills and laws candidates have voted on, and users can then comment on these. 
     
  Completing the Final Project Description (5)
 
