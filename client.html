@@ -261,12 +261,21 @@
         })
     </script>
     <style>
+
+        body{
+            background-color: skyblue;
+        }
         .message {
             display: none;
         }
 
         .rooms {
             display: none;
+            
+        }
+
+        .rooms li > *{
+            font-weight: bold;
         }
 
         .ListButton {
@@ -276,6 +285,33 @@
         .owner {
             display: none;
         }
+
+        #welcome{
+            text-align: center;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        #start_chatting{
+            font-size: 18px;
+            text-align: center;
+            margin-top: 50px;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        #set_user_button{
+            display: inline-block;
+            margin-left: 25px;
+            
+        }
+
+        #username_input{
+            margin-left: 40%;
+        }
+
+        #leave_room_btn{
+            margin-top: 3%;
+        }
+
     </style>
 </head>
 
@@ -283,9 +319,12 @@
 
     <!--Set username-->
     <!--form to set user name-->
+    <h1 class="sign_in" id="welcome">Welcome to chat app</h1>
+
+    <p class="sign_in" id="start_chatting">Start chatting by setting your username!</p>
 
     <input type="text" id="username_input" class="sign_in" placeholder="Username">
-    <button onclick="setUserName()" class="sign_in">Set User Name</button> <br>
+    <button onclick="setUserName()" class="sign_in" id="set_user_button">Set User Name</button> <br>
 
 
     <!--Chat Log and send chat and leave chat-->
@@ -295,7 +334,7 @@
 
     <button onclick="sendMessage(true)" class="message">Send Private Message</button>
     <br>
-    <button onclick="leaveRoom()" class="message">Leave Room</button>
+    <button onclick="leaveRoom()" class="message" id="leave_room_btn">Leave Room</button>
     <br>
     <h3 class="owner">Admin Tools</h3>
     <br>
